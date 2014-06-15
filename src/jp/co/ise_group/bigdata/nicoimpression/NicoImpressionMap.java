@@ -13,75 +13,142 @@ package jp.co.ise_group.bigdata.nicoimpression;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * ニコ動コメント感情分析のMapクラスです。
- *
+ * 
  * @author M.Yoshida
- *
+ * 
  */
-public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, IntWritable> {
+public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWritable> {
 
 	private static final IntWritable ONE = new IntWritable(1);
 
-	private Map<Long, List<Text>> metas = new HashMap<Long, List<Text>>();
+	/** 動画メタデータ */
+	private static ConcurrentHashMap<Text, List<Text>> metadatas = new ConcurrentHashMap<Text, List<Text>>();
+	/** 処理中の動画ID */
+	private Text videoId;
+	/** 処理中の動画のタグ */
+	private List<Text> tags;
+	/** 全コメント数 */
+	private int allCommentCount = 0;
+	/** コメント数カウンタ */
+	private Map<String, MutableInt> commentCounter = new HashMap<String, MutableInt>();
 
 	@Override
-	protected void setup(Mapper<LongWritable, Text, Text, IntWritable>.Context context) throws IOException,
+	protected void setup(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException,
 			InterruptedException {
+		// 処理対象データファイル名を取得
 		String dataFileName = ((FileSplit) context.getInputSplit()).getPath().getName();
-		System.err.println(dataFileName);
+		// 動画IDを取得
+		videoId = new Text(StringUtils.substringBefore(dataFileName, ".dat"));
+
+		// 動画IDのメタデータがまだ読み込まれていなければ読み込み
+		synchronized (NicoImpressionMap.class) {
+			if (!metadatas.containsKey(videoId)) {
+				readMetadata(context, dataFileName);
+			}
+		}
+
+		// この動画のタグ情報を取得
+		tags = metadatas.get(videoId);
+		if (tags == null) {
+			throw new IllegalInputException("メタデータに動画ID" + videoId + "のデータが含まれていません。（処理データファイル名：" + dataFileName + "）");
+		}
+
+		// コメント数カウンタを初期化
+		commentCounter.put("laugh", new MutableInt());
+	}
+
+	/**
+	 * 引数のデータファイルのメタデータを含んでいるメタデータファイルを読み込みます。
+	 * 
+	 * @param context
+	 *            Hadoopのコンテキスト
+	 * @param dataFileName
+	 *            データファイル名
+	 * @throws IOException
+	 *             メタデータファイルを読み込めなかった場合
+	 * @throws JsonProcessingException
+	 *             メタデータファイルのJSONのパースに失敗した場合
+	 */
+	private void readMetadata(Mapper<LongWritable, Text, Text, MapWritable>.Context context, String dataFileName)
+			throws IOException, JsonProcessingException {
+		// メタデータファイル名を取得
+		Matcher matcher = Pattern.compile("\\d+").matcher(dataFileName);
+		if (!matcher.find()) {
+			throw new IllegalInputException("処理対象データファイル名から動画IDを取得できませんでした。（処理データファイル名：" + dataFileName + "）");
+		}
+		int movieNo = Integer.valueOf(matcher.group());
+		String metaFileName = String.format("%08d", movieNo).substring(0, 4) + ".dat";
+		// メタデータファイルディレクトリを取得
 		Path[] pathes = context.getLocalCacheArchives();
-		String path = pathes[0].getName() + "/0000.dat";
-		System.err.println(path);
-		File f = new File(path);
-		System.err.println(FileUtils.readLines(f).get(0));
-		//		try (
-		//				InputStream in = ClassLoader.getSystemResourceAsStream("./0000.dat");) {
-		//			System.out.println(org.apache.commons.io.IOUtils.lineIterator(in, "UTF-8").next());
-		//		}
-		//		System.out.println(new File(context.getWorkingDirectory() + "/0000.dat").exists());
+		String metaFilePath = pathes[0].getName() + "/" + metaFileName;
+		// メタデータファイルを読み込み
+		ObjectMapper mapper = new ObjectMapper();
+		for (String line : FileUtils.readLines(new File(metaFilePath))) {
+			JsonNode root = mapper.readTree(line);
+			String vId = root.path("video_id").getTextValue();
+			List<Text> tagList = new ArrayList<>();
+			for (JsonNode tag : root.path("tags")) {
+				String tagName = tag.path("tag").getTextValue();
+				tagList.add(new Text(tagName));
+			}
+			metadatas.putIfAbsent(new Text(vId), tagList);
+		}
 	}
 
 	@Override
-	protected void map(LongWritable key, Text value, Context context)
-			throws IOException, InterruptedException {
+	protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+		// 全コメント数をカウントアップ
+		allCommentCount++;
 
-		//		synchronized (NicoImpressionMap.class) {
-		//			String dataFileName = ((FileSplit) context.getInputSplit()).getPath().getName();
-		//
-		//		}
-		//
-		//		ObjectMapper mapper = new ObjectMapper();
-		//		JsonNode root = mapper.readTree(value.toString());
-		//		Iterator<JsonNode> tags = root.path("tags").getElements();
-		//
-		//
-		//
-		//		while (tags.hasNext()) {
-		//			JsonNode tag = tags.next().path("tag");
-		//			context.write(new Text(tag.getTextValue()), new IntWritable(1));
-		//		}
+		// コメントに"www"が含まれていれば"laugh"コメント数をインクリメント
+		if (value.toString().contains("www")) {
+			commentCounter.get("laugh").increment();
+		}
+	}
 
-		//		System.err.println(value);
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode root = mapper.readTree(value.toString());
-		context.write(new Text(root.path("no").getValueAsText()), ONE);
+	@Override
+	protected void cleanup(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException,
+			InterruptedException {
+		// 集計したコメント数をこの動画の全コメント数に対する割合に変換する
+		// また、シリアライズできる型に変換する
+		MapWritable map = new MapWritable();
+		double dAllCommentCount = (double) allCommentCount;
+		for (Entry<String, MutableInt> e : commentCounter.entrySet()) {
+			int count = e.getValue().intValue();
+			double rate = count / dAllCommentCount;
+			map.put(new Text(e.getKey()), new DoubleWritable(rate));
+		}
+
+		// タグごとに結果を書き込み
+		for (Text tag : tags) {
+			context.write(tag, map);
+		}
 	}
 
 }

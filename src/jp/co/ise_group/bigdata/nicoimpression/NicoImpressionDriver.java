@@ -6,7 +6,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -18,7 +18,7 @@ import org.apache.hadoop.util.ToolRunner;
 
 /**
  * ニコ動コメント感情分析のDriverクラスです。
- *
+ * 
  * @author M.Yoshida
  */
 public class NicoImpressionDriver extends Configured implements Tool {
@@ -29,14 +29,9 @@ public class NicoImpressionDriver extends Configured implements Tool {
 	@Override
 	public int run(String[] args) throws Exception {
 		if (args.length != 2) {
-			System.out.printf("Usage: %s [generic options] <indir> <outdir>\n",
-					getClass().getSimpleName());
+			System.out.printf("Usage: %s [generic options] <indir> <outdir>\n", getClass().getSimpleName());
 			return -1;
 		}
-
-		//		FileUtil.symLink("E:\\pleiades\\workspace\\nicoimpression\\0000.zip", "");
-		//
-		//		return 0;
 
 		File outDir = new File(args[1]);
 		FileUtils.deleteDirectory(outDir);
@@ -52,10 +47,10 @@ public class NicoImpressionDriver extends Configured implements Tool {
 		job.setReducerClass(NicoImpressionReduce.class);
 
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(IntWritable.class);
+		job.setMapOutputValueClass(MapWritable.class);
 
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(IntWritable.class);
+		job.setOutputValueClass(Text.class);
 
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
@@ -65,7 +60,7 @@ public class NicoImpressionDriver extends Configured implements Tool {
 
 	/**
 	 * 単語カウント処理を実行します。
-	 *
+	 * 
 	 * @param args
 	 *            コマンド引数なし
 	 * @throws Exception
