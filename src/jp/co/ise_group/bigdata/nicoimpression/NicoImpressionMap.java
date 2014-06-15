@@ -27,7 +27,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
@@ -45,8 +44,8 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWritable> {
 
-	private static final IntWritable ONE = new IntWritable(1);
-
+	/** 感情定義 */
+	private static ImpressionDef[] impressionDefs;
 	/** 動画メタデータ */
 	private static ConcurrentHashMap<Text, List<Text>> metadatas = new ConcurrentHashMap<Text, List<Text>>();
 	/** 処理中の動画ID */
@@ -61,16 +60,17 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 	@Override
 	protected void setup(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException,
 			InterruptedException {
-		// 処理対象データファイル名を取得
+		// 感情定義を読み込み
+		synchronized (NicoImpressionMap.class) {
+			readImpressionDef(context);
+		}
+		// 処理対象データファイル名および動画IDを取得
 		String dataFileName = ((FileSplit) context.getInputSplit()).getPath().getName();
-		// 動画IDを取得
 		videoId = new Text(StringUtils.substringBefore(dataFileName, ".dat"));
 
-		// 動画IDのメタデータがまだ読み込まれていなければ読み込み
-		synchronized (NicoImpressionMap.class) {
-			if (!metadatas.containsKey(videoId)) {
-				readMetadata(context, dataFileName);
-			}
+		// 動画IDのメタデータを読み込み
+		synchronized (metadatas) {
+			readMetadata(context, dataFileName);
 		}
 
 		// この動画のタグ情報を取得
@@ -80,7 +80,29 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 		}
 
 		// コメント数カウンタを初期化
-		commentCounter.put("laugh", new MutableInt());
+		for (ImpressionDef def : impressionDefs) {
+			commentCounter.put(def.getImpressionId(), new MutableInt());
+		}
+	}
+
+	/**
+	 * 感情定義を読み込みます。
+	 * 
+	 * @param context
+	 *            Hadoopのコンテキスト
+	 * @throws IOException
+	 *             感情定義が読み込めなかった場合
+	 */
+	private void readImpressionDef(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException {
+		// すでに読み込まれている場合何もしない
+		if (impressionDefs != null) {
+			return;
+		}
+
+		@SuppressWarnings("deprecation")
+		Path[] pathes = context.getLocalCacheFiles();
+		ObjectMapper mapper = new ObjectMapper();
+		impressionDefs = mapper.readValue(new File(pathes[0].getName()), ImpressionDef[].class);
 	}
 
 	/**
@@ -97,6 +119,11 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 	 */
 	private void readMetadata(Mapper<LongWritable, Text, Text, MapWritable>.Context context, String dataFileName)
 			throws IOException, JsonProcessingException {
+		// すでに読み込まれている場合、何もしない
+		if (metadatas.containsKey(videoId)) {
+			return;
+		}
+
 		// メタデータファイル名を取得
 		Matcher matcher = Pattern.compile("\\d+").matcher(dataFileName);
 		if (!matcher.find()) {
@@ -105,6 +132,7 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 		int movieNo = Integer.valueOf(matcher.group());
 		String metaFileName = String.format("%08d", movieNo).substring(0, 4) + ".dat";
 		// メタデータファイルディレクトリを取得
+		@SuppressWarnings("deprecation")
 		Path[] pathes = context.getLocalCacheArchives();
 		String metaFilePath = pathes[0].getName() + "/" + metaFileName;
 		// メタデータファイルを読み込み
@@ -126,9 +154,16 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 		// 全コメント数をカウントアップ
 		allCommentCount++;
 
-		// コメントに"www"が含まれていれば"laugh"コメント数をインクリメント
-		if (value.toString().contains("www")) {
-			commentCounter.get("laugh").increment();
+		// コメントを感情分析
+		String comment = value.toString();
+		for (ImpressionDef def : impressionDefs) {
+			for (Pattern pattern : def.getPatterns()) {
+				Matcher matcher = pattern.matcher(comment);
+				if (matcher.find()) {
+					String impressionId = def.getImpressionId();
+					commentCounter.get(impressionId).increment();
+				}
+			}
 		}
 	}
 

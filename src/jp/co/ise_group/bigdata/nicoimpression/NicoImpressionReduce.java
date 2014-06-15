@@ -38,10 +38,17 @@ public class NicoImpressionReduce extends Reducer<Text, MapWritable, NullWritabl
 			InterruptedException {
 		int count = 0;
 		Map<Text, MutableDouble> rateSum = new HashMap<Text, MutableDouble>();
-		rateSum.put(new Text("laugh"), new MutableDouble());
 
 		// このタグに紐づく全動画の感情データを合計
 		for (MapWritable value : values) {
+			// 初回は感情識別子を全てリストアップして初期化
+			if (count == 0) {
+				for (Entry<Writable, Writable> e : value.entrySet()) {
+					rateSum.put((Text) e.getKey(), new MutableDouble());
+				}
+			}
+
+			// 感情データの合計
 			count++;
 			for (Entry<Writable, Writable> e : value.entrySet()) {
 				double rate = ((DoubleWritable) e.getValue()).get();

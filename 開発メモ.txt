@@ -2,3 +2,9 @@
 また、スキーマfile://等を指定しなければならない
 分散キャッシュはgz未対応
 分散キャッシュを使用するにはwindowsではシステム管理者以外がシンボリックリンクを作成できるようにしなければならない？
+
+
+select imp->'tag', imp->'laugh' from output where (imp->>'count')::INT>10 order by (imp->>'laugh') desc;
+select imp->'tag', imp->'admiration' from output where (imp->>'count')::INT>10 order by (imp->>'admiration') desc;
+select imp->'tag', imp->'impact' from output where (imp->>'count')::INT>10 order by (imp->>'impact') desc;
+select imp->'tag', imp->'surprise' from output where (imp->>'count')::INT>10 order by (imp->>'surprise') desc;
