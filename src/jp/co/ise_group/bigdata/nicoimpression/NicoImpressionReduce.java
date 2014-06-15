@@ -40,13 +40,11 @@ public class NicoImpressionReduce extends Reducer<Text, MapWritable, NullWritabl
 		Map<Text, MutableDouble> rateSum = new HashMap<Text, MutableDouble>();
 		rateSum.put(new Text("laugh"), new MutableDouble());
 
-		System.err.println(key);
 		// このタグに紐づく全動画の感情データを合計
 		for (MapWritable value : values) {
 			count++;
 			for (Entry<Writable, Writable> e : value.entrySet()) {
 				double rate = ((DoubleWritable) e.getValue()).get();
-				System.err.println(rate);
 				rateSum.get(e.getKey()).add(rate);
 			}
 		}
@@ -54,6 +52,7 @@ public class NicoImpressionReduce extends Reducer<Text, MapWritable, NullWritabl
 		// このタグに紐づく全動画の感情データを平均し、最終的な結果データを保持したMapを作成
 		Map<String, Object> resultMap = new LinkedHashMap<String, Object>();
 		resultMap.put("tag", key.toString());
+		resultMap.put("count", count);
 		for (Entry<Text, MutableDouble> e : rateSum.entrySet()) {
 			double rate = e.getValue().doubleValue() / count;
 			resultMap.put(e.getKey().toString(), rate);
