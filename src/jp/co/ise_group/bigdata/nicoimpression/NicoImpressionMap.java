@@ -32,9 +32,9 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 	/** 処理中の動画のタグ */
 	private Text[] tags;
 	/** 全コメント数 */
-	private int allCommentCount = 0;
+	private int commentCounter;
 	/** コメント数カウンタ */
-	private Map<String, MutableInt> commentCounter = new HashMap<String, MutableInt>();
+	private Map<String, MutableInt> impressionCounter = new HashMap<String, MutableInt>();
 
 	@Override
 	protected void setup(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException,
@@ -48,27 +48,31 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 		String dataFileName = ((FileSplit) context.getInputSplit()).getPath().getName();
 		videoId = new Text(StringUtils.substringBefore(dataFileName, ".dat"));
 
-		// 動画IDのメタデータを読み込み
+		// この動画を含むメタデータファイルを読み込み
 		synchronized (Metadata.class) {
 			Metadata.readMetadata(context, dataFileName);
 		}
 
-		// この動画のタグ情報を取得
-		tags = Metadata.get().get(videoId).getTags();
+		// この動画のメタデータを取得
+		Metadata metadata = Metadata.get().get(videoId);
+		commentCounter = metadata.getCommentCounter();
+		tags = metadata.getTags();
 		if (tags == null) {
 			throw new IllegalInputException("メタデータに動画ID" + videoId + "のデータが含まれていません。（処理データファイル名：" + dataFileName + "）");
 		}
 
 		// コメント数カウンタを初期化
 		for (ImpressionDef def : Config.get().getImpressionDefs()) {
-			commentCounter.put(def.getImpressionId(), new MutableInt());
+			impressionCounter.put(def.getImpressionId(), new MutableInt());
 		}
 	}
 
 	@Override
 	protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-		// 全コメント数をカウントアップ
-		allCommentCount++;
+		// コメント数が閾値未満ならmap処理はすべてスキップ
+		if (Config.get().getCommentThreshold() > commentCounter) {
+			return;
+		}
 
 		// コメントを感情分析
 		String comment = value.toString();
@@ -77,7 +81,7 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 				Matcher matcher = pattern.matcher(comment);
 				if (matcher.find()) {
 					String impressionId = def.getImpressionId();
-					commentCounter.get(impressionId).increment();
+					impressionCounter.get(impressionId).increment();
 				}
 			}
 		}
@@ -89,10 +93,10 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 		// 集計したコメント数をこの動画の全コメント数に対する割合に変換する
 		// また、シリアライズできる型に変換する
 		MapWritable map = new MapWritable();
-		double dAllCommentCount = (double) allCommentCount;
-		for (Entry<String, MutableInt> e : commentCounter.entrySet()) {
+		double dCommentCounter = (double) commentCounter;
+		for (Entry<String, MutableInt> e : impressionCounter.entrySet()) {
 			int count = e.getValue().intValue();
-			double rate = count / dAllCommentCount;
+			double rate = count / dCommentCounter;
 			map.put(new Text(e.getKey()), new DoubleWritable(rate));
 		}
 

@@ -25,7 +25,6 @@ import org.codehaus.jackson.ObjectCodec;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.DeserializationContext;
 import org.codehaus.jackson.map.JsonDeserializer;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -46,6 +45,8 @@ public final class Metadata {
 
 	/** 動画ID */
 	private final Text videoId;
+	/** コメント数 */
+	private final int commentCounter;
 	/** タグ */
 	private final Text[] tags;
 
@@ -83,7 +84,6 @@ public final class Metadata {
 
 		// メタデータファイルを読み込み
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		for (String line : FileUtils.readLines(new File(metaFilePath))) {
 			Metadata metadata = mapper.readValue(line, Metadata.class);
 			metadatas.putIfAbsent(metadata.getVideoId(), metadata);
@@ -100,13 +100,19 @@ public final class Metadata {
 	@JsonCreator
 	public Metadata(//
 			@JsonProperty("video_id") String videoId,//
+			@JsonProperty("comment_counter") int commentCounter,//
 			@JsonProperty("tags") @JsonDeserialize(using = TagsDeserializer.class) Text[] tags) {
 		this.videoId = new Text(videoId);
+		this.commentCounter = commentCounter;
 		this.tags = tags;
 	}
 
 	public Text getVideoId() {
 		return videoId;
+	}
+
+	public int getCommentCounter() {
+		return commentCounter;
 	}
 
 	public Text[] getTags() {
