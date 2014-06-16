@@ -1,14 +1,3 @@
-/*
- * タイトル：単語カウントReduce処理
- * 説明　　：単語カウントのReduce処理を実行する。
- *
- * 著作権　：Copyright(c) 2014 Information System Engineering Co., Ltd. All Rights Reserved.
- * 会社名　：株式会社情報システム工学
- *
- * 変更履歴：2014.02.11 Tuesday
- * 　　　　：新規登録
- *
- */
 package jp.co.ise_group.bigdata.nicoimpression;
 
 import java.io.IOException;
