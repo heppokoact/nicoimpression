@@ -1,4 +1,4 @@
-package jp.co.ise_group.bigdata.nicoimpression;
+package jp.co.ise_group.bigdata.nicoimpression.dto;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,7 +9,7 @@ import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
- * 感情の定義 感情の識別子や、どの正規表現をその感情にマッピングするかを定義
+ * 感情の定義。 感情の識別子や、どの正規表現をその感情にマッピングするかを定義
  * 
  * @author M.Yoshida
  */
