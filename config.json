@@ -1,0 +1,9 @@
+{
+  "commentThreshold": 100,
+  "impressionDefs": [
+    {"impressionId":"laugh", "patterns": ["www","ｗｗｗ"]},
+    {"impressionId":"admiration", "patterns": ["888","８８８"]},
+    {"impressionId":"impact", "patterns": ["おおお","すげえ","Suge","すごい"]},
+    {"impressionId":"surprise", "patterns": ["^¥¥!¥¥?$","^！？$","えっ?？"]}
+  ]
+}
