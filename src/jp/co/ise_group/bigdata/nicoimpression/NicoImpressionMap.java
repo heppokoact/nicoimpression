@@ -19,6 +19,8 @@ import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * ニコ動コメント感情分析のMapクラスです。
@@ -75,7 +77,14 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 		}
 
 		// コメントを感情分析
-		String comment = value.toString();
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode root = mapper.readTree(value.toString());
+		String comment = root.path("comment").getTextValue();
+		// コメントはなぜかnullのことがあるのでnullチェック
+		if (comment == null) {
+			return;
+		}
+		// このコメントが各感情を含むかどうかを分析
 		for (ImpressionDef def : Config.get().getImpressionDefs()) {
 			for (Pattern pattern : def.getPatterns()) {
 				Matcher matcher = pattern.matcher(comment);
