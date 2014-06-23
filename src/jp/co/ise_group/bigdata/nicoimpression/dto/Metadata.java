@@ -2,6 +2,7 @@ package jp.co.ise_group.bigdata.nicoimpression.dto;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -78,9 +79,9 @@ public final class Metadata {
 		String metaFileName = String.format("%08d", movieNo).substring(0, 4) + ".dat";
 
 		// メタデータファイルディレクトリを取得
-		@SuppressWarnings("deprecation")
-		Path[] pathes = context.getLocalCacheArchives();
-		String metaFilePath = pathes[0].getName() + "/" + metaFileName;
+		URI[] uris = context.getCacheArchives();
+		Path path = new Path(uris[0]);
+		String metaFilePath = path.getName() + "/" + metaFileName;
 
 		// メタデータファイルを読み込み
 		ObjectMapper mapper = new ObjectMapper();

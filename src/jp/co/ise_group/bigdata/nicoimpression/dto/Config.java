@@ -2,6 +2,7 @@ package jp.co.ise_group.bigdata.nicoimpression.dto;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -37,10 +38,10 @@ public final class Config {
 	 */
 	public static void readConfig(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException {
 		if (config == null) {
-			@SuppressWarnings("deprecation")
-			Path[] pathes = context.getLocalCacheFiles();
+			URI[] uris = context.getCacheFiles();
+			Path path = new Path(uris[0]);
 			ObjectMapper mapper = new ObjectMapper();
-			config = mapper.readValue(new File(pathes[0].getName()), Config.class);
+			config = mapper.readValue(new File(path.getName()), Config.class);
 		}
 	}
 
