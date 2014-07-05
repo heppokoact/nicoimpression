@@ -2,9 +2,11 @@
 また、スキーマfile://等を指定しなければならない
 分散キャッシュはgz未対応
 分散キャッシュを使用するにはwindowsではシステム管理者以外がシンボリックリンクを作成できるようにしなければならない？
-
+作業ディレクトリ（カレントディレクトリ？）にファイルと同名のシンボリックリンクを張るので、分散キャッシュが作業ディレクトリにあるとシンボリックリンクが張れない
 
 select imp->'tag', (imp->>'laugh')::FLOAT8 from output where (imp->>'count')::INT>10 order by (imp->>'laugh')::FLOAT8 desc;
 select imp->'tag', (imp->>'admiration')::FLOAT8 from output where (imp->>'count')::INT>10 order by (imp->>'admiration')::FLOAT8 desc;
 select imp->'tag', (imp->>'impact')::FLOAT8 from output where (imp->>'count')::INT>10 order by (imp->>'impact')::FLOAT8 desc;
 select imp->'tag', (imp->>'surprise')::FLOAT8 from output where (imp->>'count')::INT>10 order by (imp->>'surprise')::FLOAT8 desc;
+select imp->'tag', (imp->>'beautiful')::FLOAT8 from output where (imp->>'count')::INT>10 order by (imp->>'beautiful')::FLOAT8 desc;
+select imp->'tag', (imp->>'injury')::FLOAT8 from output where (imp->>'count')::INT>10 order by (imp->>'injury')::FLOAT8 desc;

@@ -3,7 +3,8 @@
   "impressionDefs": [
     {"impressionId":"laugh", "patterns": ["www","ｗｗｗ"]},
     {"impressionId":"admiration", "patterns": ["888","８８８"]},
-    {"impressionId":"impact", "patterns": ["おおお","すげえ","Suge","すごい"]},
-    {"impressionId":"surprise", "patterns": ["^¥¥!¥¥?$","^！？$","えっ?？"]}
+    {"impressionId":"impact", "patterns": ["おおお","すげえ","すごい","Suge"]},
+    {"impressionId":"surprise", "patterns": ["^[¥¥!！][¥¥?？]$","^えっ?？?$"]},
+    {"impressionId":"beautiful", "patterns": ["(美|(う|ふ)つく)しい", "きれい", "ビューティフ(ル|ォー)"]}
   ]
 }
