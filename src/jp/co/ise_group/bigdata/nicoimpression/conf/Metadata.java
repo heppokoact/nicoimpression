@@ -1,4 +1,4 @@
-package jp.co.ise_group.bigdata.nicoimpression.dto;
+package jp.co.ise_group.bigdata.nicoimpression.conf;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,6 @@ import jp.co.ise_group.bigdata.nicoimpression.IllegalInputException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -63,7 +62,7 @@ public final class Metadata {
 	 * @throws JsonProcessingException
 	 *             メタデータファイルのJSONのパースに失敗した場合
 	 */
-	public static void readMetadata(Mapper<LongWritable, Text, Text, MapWritable>.Context context, String dataFileName)
+	public static void readMetadata(Mapper<Text, Text, Text, MapWritable>.Context context, String dataFileName)
 			throws IOException, JsonProcessingException {
 		// すでに読み込まれている場合、何もしない
 		if (readFiles.contains(dataFileName)) {

@@ -9,8 +9,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
@@ -52,7 +53,7 @@ public class NicoImpressionDriver extends Configured implements Tool {
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
 
-		job.setInputFormatClass(TextInputFormat.class);
+		job.setInputFormatClass(WholeSequenceFileInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
 		return job.waitForCompletion(true) ? 0 : -1;
@@ -70,4 +71,10 @@ public class NicoImpressionDriver extends Configured implements Tool {
 		System.exit(ToolRunner.run(new NicoImpressionDriver(), args));
 	}
 
+	public static class WholeSequenceFileInputFormat extends SequenceFileInputFormat<Text, Text> {
+		@Override
+		protected boolean isSplitable(JobContext context, Path filename) {
+			return false;
+		}
+	}
 }

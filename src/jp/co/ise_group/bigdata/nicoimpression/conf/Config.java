@@ -1,11 +1,10 @@
-package jp.co.ise_group.bigdata.nicoimpression.dto;
+package jp.co.ise_group.bigdata.nicoimpression.conf;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -36,7 +35,7 @@ public final class Config {
 	 * @throws IOException
 	 *             感情分析の設定ファイルの読み込みやパースに失敗した場合
 	 */
-	public static void readConfig(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException {
+	public static void readConfig(Mapper<Text, Text, Text, MapWritable>.Context context) throws IOException {
 		if (config == null) {
 			URI[] uris = context.getCacheFiles();
 			Path path = new Path(uris[0]);

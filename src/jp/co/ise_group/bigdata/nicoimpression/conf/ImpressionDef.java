@@ -1,4 +1,4 @@
-package jp.co.ise_group.bigdata.nicoimpression.dto;
+package jp.co.ise_group.bigdata.nicoimpression.conf;
 
 import java.util.ArrayList;
 import java.util.Collections;
