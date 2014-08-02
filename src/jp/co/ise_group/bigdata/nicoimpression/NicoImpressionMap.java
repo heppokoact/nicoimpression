@@ -1,8 +1,6 @@
 package jp.co.ise_group.bigdata.nicoimpression;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import jp.co.ise_group.bigdata.nicoimpression.conf.Config;
 
@@ -29,17 +27,9 @@ public class NicoImpressionMap extends Mapper<Text, Text, Text, MapWritable> {
 		}
 	}
 
-	private Set<String> set = new HashSet<>();
-
 	@Override
 	protected void map(Text key, Text value, Mapper<Text, Text, Text, MapWritable>.Context context) throws IOException,
 			InterruptedException {
-		set.add(key.toString());
-
-		if (analyser != null && !key.toString().equals(analyser.getDataFileName().toString())) {
-			System.out.println(1);
-		}
-
 		// 初回及びファイル名の切れ目でanalyserを作り変える
 		if (analyser == null || !key.equals(analyser.getDataFileName())) {
 			if (analyser != null) {
@@ -54,9 +44,6 @@ public class NicoImpressionMap extends Mapper<Text, Text, Text, MapWritable> {
 	@Override
 	protected void cleanup(Mapper<Text, Text, Text, MapWritable>.Context context) throws IOException,
 			InterruptedException {
-		for (String t : set) {
-			System.out.println("★★★★" + t);
-		}
 		analyser.summary();
 	}
 }
