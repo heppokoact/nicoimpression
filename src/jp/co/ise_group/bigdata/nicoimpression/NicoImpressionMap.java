@@ -99,6 +99,11 @@ public class NicoImpressionMap extends Mapper<LongWritable, Text, Text, MapWrita
 	@Override
 	protected void cleanup(Mapper<LongWritable, Text, Text, MapWritable>.Context context) throws IOException,
 			InterruptedException {
+		// コメント数が閾値未満なら集計処理はスキップ
+		if (Config.get().getCommentThreshold() > commentCounter) {
+			return;
+		}
+
 		// 集計したコメント数をこの動画の全コメント数に対する割合に変換する
 		// また、シリアライズできる型に変換する
 		MapWritable map = new MapWritable();
